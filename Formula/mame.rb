@@ -17,6 +17,7 @@ class Mame < Formula
   depends_on "glm" => :build
   depends_on "pkg-config" => :build
   depends_on "pugixml" => :build
+  depends_on "python" => :build
   depends_on "rapidjson" => :build
   depends_on "sphinx-doc" => :build
   depends_on "flac"
@@ -34,11 +35,24 @@ class Mame < Formula
   uses_from_macos "expat"
   uses_from_macos "zlib"
 
+  on_linux do
+    fails_with gcc: "4"
+    fails_with gcc: "5"
+    fails_with gcc: "6"
+    fails_with gcc: "7"
+    fails_with gcc: "8"
+
+    # Required gcc formula's version is 9 or later.
+    depends_on "gcc"
+    depends_on "qt"
+    depends_on "sdl2_ttf"
+  end
+
   def install
     # Cut sdl2-config's invalid option.
     inreplace "scripts/src/osd/sdl.lua", "--static", ""
 
-    system "make", "USE_LIBSDL=1",
+    system "make", "PYTHON_EXECUTABLE=#{Formula["python"].opt_bin}/python3",
                    "USE_SYSTEM_LIB_EXPAT=1",
                    "USE_SYSTEM_LIB_ZLIB=1",
                    "USE_SYSTEM_LIB_ASIO=",
