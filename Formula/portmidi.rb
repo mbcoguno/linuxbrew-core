@@ -15,6 +15,24 @@ class Portmidi < Formula
 
   depends_on "cmake" => :build
 
+  on_linux do
+    depends_on "alsa-lib"
+
+    patch do
+      url "https://deb.debian.org/debian/pool/main/p/portmidi/portmidi_217-6.debian.tar.xz"
+      sha256 "6b2456361d87cbef6c13ecf4d03ce4fbd661101e289eb7b9cbd76301e794fce8"
+      apply %W[
+        patches/00_cmake.diff
+        patches/01_pmlinux.diff
+        patches/03_pm_test_Makefile.diff
+        patches/13-disablejni.patch
+        patches/20-movetest.diff
+        patches/30-porttime_cmake.diff
+        patches/50-change_assert.diff
+      ]
+    end
+  end
+
   def install
     ENV["SDKROOT"] = MacOS.sdk_path if MacOS.version == :sierra || MacOS.version == :el_capitan
 
@@ -24,13 +42,18 @@ class Portmidi < Formula
     include.mkpath
     lib.mkpath
 
-    # Fix outdated SYSROOT to avoid:
-    # No rule to make target `/Developer/SDKs/MacOSX10.5.sdk/...'
-    inreplace "pm_common/CMakeLists.txt",
-              "set(CMAKE_OSX_SYSROOT /Developer/SDKs/MacOSX10.5.sdk CACHE",
-              "set(CMAKE_OSX_SYSROOT /#{MacOS.sdk_path} CACHE"
+    if OS.mac?
+      # Fix outdated SYSROOT to avoid:
+      # No rule to make target `/Developer/SDKs/MacOSX10.5.sdk/...'
+      inreplace "pm_common/CMakeLists.txt",
+                "set(CMAKE_OSX_SYSROOT /Developer/SDKs/MacOSX10.5.sdk CACHE",
+                "set(CMAKE_OSX_SYSROOT /#{MacOS.sdk_path} CACHE"
 
-    system "make", "-f", "pm_mac/Makefile.osx"
-    system "make", "-f", "pm_mac/Makefile.osx", "install"
+      system "make", "-f", "pm_mac/Makefile.osx"
+      system "make", "-f", "pm_mac/Makefile.osx", "install"
+    else
+      system "cmake", ".", *std_cmake_args
+      system "make", "install"
+    end
   end
 end
